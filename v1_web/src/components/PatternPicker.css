@@ -1,0 +1,42 @@
+.patternPicker {
+  display: grid;
+  grid-template-columns: repeat(5, 44px);
+  gap: 8px;
+}
+
+.tile {
+  height: 44px;
+  width: 44px;
+  border-radius: 10px;
+  border: 1px solid var(--border);
+  font-weight: 800;
+  letter-spacing: 0.02em;
+  cursor: pointer;
+  user-select: none;
+  transition: transform 120ms ease, filter 120ms ease;
+}
+
+.tile:hover {
+  transform: translateY(-1px);
+  filter: brightness(1.03);
+}
+
+.tile:active {
+  transform: translateY(0px);
+}
+
+.tile-b {
+  background: var(--tile-b);
+  color: var(--tile-b-fg);
+}
+
+.tile-y {
+  background: var(--tile-y);
+  color: var(--tile-y-fg);
+}
+
+.tile-g {
+  background: var(--tile-g);
+  color: var(--tile-g-fg);
+}
+
