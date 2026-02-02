@@ -67,7 +67,6 @@ async function main() {
     await program.commands.find((c) => c.name() === 'interactive')!.parseAsync([
       process.execPath,
       process.argv[1],
-      'interactive',
       ...process.argv.slice(2)
     ]);
   });
