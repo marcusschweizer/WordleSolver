@@ -1,0 +1,10 @@
+node_modules/
+dist/
+.DS_Store
+*.log
+.env
+
+# word list files (we'll generate/download these)
+data/wordle-La.txt
+data/wordle-Ta.txt
+

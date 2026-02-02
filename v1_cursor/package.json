@@ -1,0 +1,32 @@
+{
+  "name": "wordle-solver-cli",
+  "version": "0.1.0",
+  "private": true,
+  "description": "MVP Wordle solver assistant (CLI)",
+  "license": "UNLICENSED",
+  "type": "commonjs",
+  "main": "dist/src/index.js",
+  "bin": {
+    "wordle": "dist/src/index.js"
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "start": "node dist/src/index.js",
+    "dev": "node --enable-source-maps dist/src/index.js",
+    "wordle": "npm run -s build && node dist/src/index.js",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "wordlists:download": "npm run -s build && node dist/src/scripts/download-wordlists.js"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "dependencies": {
+    "commander": "^14.0.0"
+  },
+  "devDependencies": {
+    "@types/node": "^24.1.0",
+    "typescript": "^5.9.2",
+    "vitest": "^3.2.4"
+  }
+}
