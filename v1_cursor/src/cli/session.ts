@@ -17,6 +17,7 @@ export async function runInteractiveSession(opts: {
     dataDir: opts.dataDir,
     candidateSource: opts.candidateSource
   });
+  const allowedGuessSet = new Set(wordlists.allowedGuesses);
 
   const rounds: Round[] = [];
   let topN = opts.topN;
@@ -48,7 +49,7 @@ export async function runInteractiveSession(opts: {
 
   try {
     // eslint-disable-next-line no-constant-condition
-    while (true) {
+    outer: while (true) {
       candidates = filterCandidates(wordlists.candidateAnswers, rounds);
       output.write(`Remaining candidates: ${candidates.length}\n`);
 
@@ -59,47 +60,65 @@ export async function runInteractiveSession(opts: {
         for (const s of suggestions) output.write(`  ${s.word}\t${s.score}\n`);
       }
 
-      const line = (await rl.question('\n> ')).trim();
-      if (!line) continue;
+      // Read user input until something changes the game state (or we exit).
+      // This avoids re-printing suggestions when the user just mistypes a round.
+      // eslint-disable-next-line no-constant-condition
+      while (true) {
+        const line = (await rl.question('\n> ')).trim();
+        if (!line) continue;
 
-      const [cmd, ...rest] = line.split(/\s+/);
-      const lowerCmd = cmd.toLowerCase();
+        const [cmd, ...rest] = line.split(/\s+/);
+        const lowerCmd = cmd.toLowerCase();
 
-      if (lowerCmd === 'quit' || lowerCmd === 'exit' || lowerCmd === 'q') break;
-      if (lowerCmd === 'help' || lowerCmd === '?') {
-        printHelp();
-        continue;
-      }
-      if (lowerCmd === 'list') {
-        output.write(`\n${candidates.join('\n')}\n\n`);
-        continue;
-      }
-      if (lowerCmd === 'top') {
-        const n = parseInt(rest[0] ?? '', 10);
-        if (!Number.isFinite(n) || n <= 0) {
-          output.write('Usage: top <n>\n');
+        if (lowerCmd === 'quit' || lowerCmd === 'exit' || lowerCmd === 'q') break outer;
+        if (lowerCmd === 'help' || lowerCmd === '?') {
+          printHelp();
           continue;
         }
-        topN = n;
-        continue;
-      }
-      if (lowerCmd === 'undo') {
-        rounds.pop();
-        continue;
-      }
-      if (lowerCmd === 'reset') {
-        rounds.length = 0;
-        continue;
-      }
+        if (lowerCmd === 'list') {
+          output.write(`\n${candidates.join('\n')}\n\n`);
+          continue;
+        }
+        if (lowerCmd === 'top') {
+          const n = parseInt(rest[0] ?? '', 10);
+          if (!Number.isFinite(n) || n <= 0) {
+            output.write('Usage: top <n>\n');
+            continue;
+          }
+          topN = n;
+          break; // re-render suggestions with new topN
+        }
+        if (lowerCmd === 'undo') {
+          rounds.pop();
+          break; // history changed; recompute candidates/suggestions
+        }
+        if (lowerCmd === 'reset') {
+          rounds.length = 0;
+          break; // history changed; recompute candidates/suggestions
+        }
 
-      // Otherwise: interpret as "<guess> <pattern>"
-      const round = parseRound(line);
-      validateRound(round);
-      rounds.push(round);
+        // Otherwise: interpret as "<guess> <pattern>"
+        try {
+          const round = parseRound(line);
+          validateRound(round);
+          if (!allowedGuessSet.has(round.guess)) {
+            throw new Error(
+              `Guess "${round.guess}" is not in the allowed word list. Double-check spelling.`
+            );
+          }
+          rounds.push(round);
 
-      if (round.pattern === 'ggggg') {
-        output.write('\nSolved (ggggg). Good game.\n');
-        break;
+          if (round.pattern === 'ggggg') {
+            output.write('\nSolved (ggggg). Good game.\n');
+            break outer;
+          }
+          break; // history changed; recompute candidates/suggestions
+        } catch (err) {
+          const msg = err instanceof Error ? err.message : String(err);
+          output.write(`${msg}\n`);
+          output.write('Please re-enter the round as: <guess> <pattern> (5 chars using g/y/b)\n');
+          continue; // re-prompt without re-printing suggestions
+        }
       }
     }
   } finally {

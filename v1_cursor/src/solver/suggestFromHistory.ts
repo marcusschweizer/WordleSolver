@@ -21,9 +21,17 @@ export async function suggestFromHistory(opts: SuggestOptions): Promise<SuggestR
     dataDir: opts.dataDir,
     candidateSource: opts.candidateSource
   });
+  const allowedGuessSet = new Set(wordlists.allowedGuesses);
 
   const rounds: Round[] = opts.rounds.map((r) => parseRound(`${r.guess} ${r.pattern}`));
-  for (const r of rounds) validateRound(r);
+  for (const r of rounds) {
+    validateRound(r);
+    if (!allowedGuessSet.has(r.guess)) {
+      throw new Error(
+        `Guess "${r.guess}" is not in the allowed word list. Double-check spelling.`
+      );
+    }
+  }
 
   const remainingCandidates = filterCandidates(wordlists.candidateAnswers, rounds);
 
